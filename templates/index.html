@@ -1,0 +1,284 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spreadsheet AI Analyst</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Inter, Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        header {
+            background: #14213d;
+            color: white;
+            padding: 24px 6%;
+        }
+
+        header h1 { margin: 0 0 8px; font-size: 25px; }
+        header p { margin: 0; color: #cbd5e1; }
+
+        main {
+            max-width: 1000px;
+            margin: 32px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(15, 23, 42, .04);
+        }
+
+        h2 { font-size: 19px; margin-top: 0; }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 9px;
+        }
+
+        input[type="file"], textarea {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            background: white;
+            font: inherit;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .field { margin-bottom: 22px; }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: 0;
+            border-radius: 9px;
+            padding: 13px 22px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover { background: #1d4ed8; }
+        button:disabled { opacity: .6; cursor: wait; }
+
+        .examples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 12px;
+        }
+
+        .example {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #dbeafe;
+            border-radius: 20px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .notice {
+            padding: 14px;
+            border-radius: 9px;
+            margin-bottom: 20px;
+            overflow-wrap: anywhere;
+        }
+
+        .error { background: #fef2f2; color: #991b1b; }
+        .success { background: #ecfdf5; color: #065f46; }
+        .info { background: #eff6ff; color: #1e40af; }
+
+        .answer {
+            white-space: pre-wrap;
+            line-height: 1.8;
+            overflow-wrap: anywhere;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+
+        .metric {
+            padding: 17px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            overflow-wrap: anywhere;
+        }
+
+        .metric .label {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+
+        .metric .value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 9px;
+            font-size: 13px;
+        }
+
+        footer {
+            text-align: center;
+            color: #64748b;
+            padding: 24px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            main { margin-top: 18px; padding: 0 12px; }
+            .card { padding: 17px; }
+            header { padding: 22px 18px; }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>Spreadsheet AI Analyst</h1>
+    <p>Upload business data. Ask questions. Get meaningful insights.</p>
+</header>
+
+<main>
+    <section class="card">
+        <h2>Analyze your spreadsheet</h2>
+        <p>Upload an Excel or CSV file exported from Google Sheets.</p>
+
+        <form method="POST" enctype="multipart/form-data" id="analysisForm">
+            <div class="field">
+                <label for="file">Spreadsheet file</label>
+                <input
+                    id="file"
+                    type="file"
+                    name="file"
+                    accept=".csv,.xlsx"
+                    required
+                >
+            </div>
+
+            <div class="field">
+                <label for="question">What would you like to know?</label>
+                <textarea
+                    id="question"
+                    name="question"
+                    placeholder="Example: From 11 October to 31 October, count positive and negative reviews and compare turnover with the previous period."
+                    required
+                >{{ question }}</textarea>
+
+                <div class="examples">
+                    <button type="button" class="example"
+                        onclick="setQuestion('Give me an overall summary of this spreadsheet.')">
+                        Overall summary
+                    </button>
+
+                    <button type="button" class="example"
+                        onclick="setQuestion('Count positive and negative reviews by date.')">
+                        Review analysis
+                    </button>
+
+                    <button type="button" class="example"
+                        onclick="setQuestion('Calculate total revenue by region.')">
+                        Revenue by region
+                    </button>
+
+                    <button type="button" class="example"
+                        onclick="setQuestion('Compare turnover across two periods and calculate growth percentage.')">
+                        Turnover growth
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" id="submitButton">Analyze data</button>
+            <p id="loading" hidden>Analyzing your spreadsheet. Please wait...</p>
+        </form>
+    </section>
+
+    {% if error %}
+    <section class="card">
+        <div class="notice error">
+            <strong>Analysis failed</strong>
+            <p>{{ error }}</p>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if clarification %}
+    <section class="card">
+        <div class="notice info">
+            <strong>More information needed</strong>
+            <p>{{ clarification }}</p>
+            <p>Please enter a clearer question and submit the spreadsheet again.</p>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if answer %}
+    <section class="card">
+        <div class="notice success">
+            Analysis completed successfully.
+            {% if filename %}
+            <br>File: <strong>{{ filename }}</strong>
+            {% endif %}
+        </div>
+
+        <h2>AI-generated summary</h2>
+        <div class="answer">{{ answer }}</div>
+    </section>
+    {% endif %}
+
+    {% if results %}
+    <section class="card">
+        <h2>Calculated results</h2>
+        <p>These results are calculated by Python from the uploaded data.</p>
+        <pre>{{ results | tojson(indent=2) }}</pre>
+    </section>
+    {% endif %}
+</main>
+
+<footer>
+    Spreadsheet AI Analyst · Powered by Python and Hugging Face
+</footer>
+
+<script>
+    function setQuestion(text) {
+        document.getElementById("question").value = text;
+        document.getElementById("question").focus();
+    }
+
+    document.getElementById("analysisForm").addEventListener("submit", function () {
+        document.getElementById("submitButton").disabled = true;
+        document.getElementById("submitButton").textContent = "Analyzing...";
+        document.getElementById("loading").hidden = false;
+    });
+</script>
+</body>
+</html>
+
